@@ -18,30 +18,56 @@ tax_rate_table = [
                     ]
 tax_threshold = 5000
 
-def get_salary_file(path):
-    dict1 = {}
-    try:
-        with open(path, 'r') as file:
-            for l in csv.reader(file):
-                dict1[l[0]] = l[1]
-        return dict1
-    except:
-        print('wrong path')
-        sys.exit()
+class Args():
+    def __init__(self):
+        self.args = sys.argv[1:]
+    def read_path(self):
+        list_path = []
+        if len(self.args) == 6:
+            index1 = self.args.index('-c')
+            configfile = self.args[index1 + 1]
+            index2 = self.args.index('-d')
+            userfile = self.args[index2 + 1]
+            index3 = self.args.index('-o')
+            outfile = self.args[index3 + 1]
+            list.append(configfile)
+            list.append(userfile)
+            list.append(outfile)
+            print(list_path)
+        else:
+            print('Parameter Error')
+        return list_path
 
-def get_socialsecurity_file(path):
-    dict2 = {}
-    try:
-        with open(path, 'r') as file:
-            for l in file.readlines():
-                l1 = (l.strip('\n')).split(' = ')
-                dict2[l1[0]] = l1[1]
-        return dict2
-    except:
-        print('wrong path')
-        sys.exit()
+class Userdata():
+    def __init__(self, path):
+        self.path = path
+    def read_users_data(self):
+        dict1 = {}
+        try:
+            with open(self.path, 'r') as file:
+                for l in csv.reader(file):
+                    dict1[l[0]] = l[1]
+            return dict1
+        except:
+            print('wrong path')
+            sys.exit()
 
-def social_payment(inco, soc_f):                         #社会保险费用计算
+class Config():
+    def __init__(self,path):
+        self.config = self.read_config(path) 
+    def read_config(self,path):
+        dict2 = {}
+        try:
+            with open(self.path, 'r') as file:
+                for l in file.readlines():
+                    l1 = (l.strip('\n')).split(' = ')
+                    dict2[l1[0]] = l1[1]
+            return dict2
+        except:
+            print('wrong path')
+            sys.exit()
+
+def social_payment(inco, soc_f):                        
     for key,value in soc_f.items():
         soc_f[key] = float(value)
 
@@ -83,17 +109,20 @@ def tax_compute(salary_f, social_f):
             else:
                 tax = 0
             after_tax_salary = income -soc_payment - tax
-        salary_l = l_str([key, income,soc_payment,tax,after_tax_salary])
+        salary_l = l[key, income,soc_payment,tax,after_tax_salary]
         salary_table.append(salary_l)
     return salary_table
 
-def outfile(l_f):
-    with open('taxtable.csv', 'w') as f:
-        for l in l_f:
-            f.write(l+'\n')
+def outfile(l_f,path):
+    with open(path, 'w') as f:
+        csv.writer(f).writerows(l_f)
 
 if __name__ == '__main__':
-    salary_file = get_salary_file(sys.argv[1])         #获取员工工资数据文件
-    social_file = get_socialsecurity_file(sys.argv[2]) #获取社保比例配置文件
-    salary_tabf = tax_compute(salary_file, social_file) #应纳税计算
-    outfile(salary_tabf)
+    args = Args()
+    file_path_l = args.read_path
+    config = Config(file_path_l[0])
+    social_file= config.read_config()
+    userdata = Userdata(file_path_l[1])
+    salary_file = userdata.read_users_data()         
+    salary_tabf = tax_compute(salary_file, social_file) 
+    outfile(salary_tabf,file_path_l[2])
