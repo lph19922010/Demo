@@ -21,30 +21,30 @@ tax_threshold = 5000
 class Args():
     def __init__(self):
         self.args = sys.argv[1:]
-    def read_path(self):
-        list_path = []
-        if len(self.args) == 6:
-            index1 = self.args.index('-c')
-            configfile = self.args[index1 + 1]
-            index2 = self.args.index('-d')
-            userfile = self.args[index2 + 1]
-            index3 = self.args.index('-o')
-            outfile = self.args[index3 + 1]
-            list.append(configfile)
-            list.append(userfile)
-            list.append(outfile)
-            print(list_path)
-        else:
-            print('Parameter Error')
-        return list_path
+
+    def read_path(self, num):
+            index = self.args.index(num)
+            return self.args[index1 + 1]
+
+    @property
+    def config_path(self):
+        return self.read_path('-c')
+    
+    @property
+    def user_path(self):
+        return self.read_path('-d')
+    
+    @property
+    def out_path(self):
+        return self.read_path('-o')
 
 class Userdata():
-    def __init__(self, path):
-        self.path = path
+    def __init__(self):
+        self.userdata = self.read_users_data
     def read_users_data(self):
-        dict1 = {}
+        dict1 = {}:
         try:
-            with open(self.path, 'r') as file:
+            with open(args.user_path 'r') as file:
                 for l in csv.reader(file):
                     dict1[l[0]] = l[1]
             return dict1
@@ -53,12 +53,12 @@ class Userdata():
             sys.exit()
 
 class Config():
-    def __init__(self,path):
+    def __init__(self):
         self.config = self.read_config(path) 
     def read_config(self,path):
         dict2 = {}
         try:
-            with open(self.path, 'r') as file:
+            with open(args.config_path, 'r') as file:
                 for l in file.readlines():
                     l1 = (l.strip('\n')).split(' = ')
                     dict2[l1[0]] = l1[1]
@@ -119,10 +119,9 @@ def outfile(l_f,path):
 
 if __name__ == '__main__':
     args = Args()
-    file_path_l = args.read_path
-    config = Config(file_path_l[0])
+    config = Config()
     social_file= config.read_config()
-    userdata = Userdata(file_path_l[1])
+    userdata = Userdata()
     salary_file = userdata.read_users_data()         
     salary_tabf = tax_compute(salary_file, social_file) 
     outfile(salary_tabf,file_path_l[2])
