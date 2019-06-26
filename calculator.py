@@ -49,33 +49,29 @@ class Config:
 
 def social_payment(inco, soc_f):                        
     for key,value in soc_f.items():
-        soc_f[key] = float(value)
-
-    soc_ratio = soc_f['YangLao']+ soc_f['YiLiao']+ soc_f['ShiYe']+ soc_f['GongShang']+ soc_f['ShengYu']+ soc_f['GongJiJin']
-
-    soc_payment = soc_f['JiShuH'] * soc_ratio
-    if inco < soc_f['JiShuL']:
-        soc_payment = soc_f['JiShuL'] * soc_ratio
-    if inco < soc_f['JiShuH']:
-        soc_payment = inco * soc_ratio
+        if inco < float(soc_f['JiShuL']):
+            soc_payment = float(soc_f['JiShuL']) * soc_f['shebao']
+        elif inco < float(soc_f['JiShuH']):
+            soc_payment = inco * soc_f['shebao']
+        else:
+            soc_payment = float(soc_f['JiShuH']) * soc_f['shebao']
         
     return soc_payment
 
 def tax_compute(salary_f, social_f):
     salary_table = []
-    for key,value in salary_f.items():
+    for l in salary_f:
         try:
-            income = int(value)
+            income = int(l[1])
         except:
             print('Parameter Error')
             continue
         soc_payment = social_payment(income, social_f)   #社保
         tax_payable = income - soc_payment - tax_threshold #应交税部分
-        print('需要交税部分工资：', tax_payable)
         for tax_rat_l in tax_rate_table:
             if tax_payable > tax_rat_l.start_p:
-                print(tax_payable, tax_rat_l.ratio, tax_rat_l.deduction)
                 tax = tax_payable * tax_rat_l.ratio - tax_rat_l.deduction  #税
+                break
             else:
                 tax = 0
         after_tax_salary = income -soc_payment - tax     #税后部分
@@ -83,7 +79,7 @@ def tax_compute(salary_f, social_f):
         tax_l = '{:.2f}'.format(tax)
         after_tax_salary_l = '{:.2f}'.format(after_tax_salary)
 
-        salary_l = [key, income,soc_payment_l,tax_l,after_tax_salary_l]
+        salary_l = [l[0], income,soc_payment_l,tax_l,after_tax_salary_l]
         salary_table.append(salary_l)
     return salary_table
 
@@ -95,5 +91,5 @@ if __name__ == '__main__':
     args = Args()
     config = Config()
     userdata = Userdata()        
-    salary_tabf = tax_compute(userdata.userdata_d, config.config_d) 
+    salary_tabf = tax_compute(userdata.userdata, config.config) 
     outfile(salary_tabf)
