@@ -24,7 +24,7 @@ class Args():
 
     def read_path(self, num):
             index = self.args.index(num)
-            return self.args[index1 + 1]
+            return self.args[index + 1]
 
     @property
     def config_path(self):
@@ -40,11 +40,11 @@ class Args():
 
 class Userdata():
     def __init__(self):
-        self.userdata = self.read_users_data
+        self.userdata_d = self.read_users_data()
     def read_users_data(self):
-        dict1 = {}:
+        dict1 = {}
         try:
-            with open(args.user_path 'r') as file:
+            with open(args.user_path, 'r') as file:
                 for l in csv.reader(file):
                     dict1[l[0]] = l[1]
             return dict1
@@ -54,8 +54,8 @@ class Userdata():
 
 class Config():
     def __init__(self):
-        self.config = self.read_config(path) 
-    def read_config(self,path):
+        self.config_d = self.read_config() 
+    def read_config(self):
         dict2 = {}
         try:
             with open(args.config_path, 'r') as file:
@@ -81,17 +81,6 @@ def social_payment(inco, soc_f):
         soc_payment = soc_f['JiShuH'] * soc_ratio
     return soc_payment
 
-def l_str(list_t):
-    str_s = ''
-    j = 1
-    for i in list_t:
-        if j < len(list_t):
-            str_s = str_s + str(i) +','
-        else:
-            str_s += str(i)
-        j += 1
-    return str_s
-
 def tax_compute(salary_f, social_f):
     salary_table = []
     for key,value in salary_f.items():
@@ -103,25 +92,26 @@ def tax_compute(salary_f, social_f):
         soc_payment = social_payment(income, social_f)
         tax_payable = income - soc_payment - tax_threshold 
         for tax_rat_l in tax_rate_table:
-            
             if tax_payable > tax_rat_l.start_p:
                 tax = tax_payable * tax_rat_l.ratio - tax_rat_l.deduction
             else:
                 tax = 0
-            after_tax_salary = income -soc_payment - tax
-        salary_l = l[key, income,soc_payment,tax,after_tax_salary]
+        after_tax_salary = income -soc_payment - tax
+        soc_payment_l = '{:.2f}'.format(soc_payment)
+        tax_l = '{:.2f}'.format(tax)
+        after_tax_salary_l = '{:.2f}'.format(after_tax_salary)
+
+        salary_l = [key, income,soc_payment_l,tax_l,after_tax_salary_l]
         salary_table.append(salary_l)
     return salary_table
 
-def outfile(l_f,path):
-    with open(path, 'w') as f:
+def outfile(l_f):
+    with open(args.out_path, 'w') as f:
         csv.writer(f).writerows(l_f)
 
 if __name__ == '__main__':
     args = Args()
     config = Config()
-    social_file= config.read_config()
-    userdata = Userdata()
-    salary_file = userdata.read_users_data()         
-    salary_tabf = tax_compute(salary_file, social_file) 
-    outfile(salary_tabf,file_path_l[2])
+    userdata = Userdata()        
+    salary_tabf = tax_compute(userdata.userdata_d, config.config_d) 
+    outfile(salary_tabf)
