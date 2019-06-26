@@ -3,69 +3,49 @@
 
 import sys
 import csv
-import collections
+from collections import namedtuple
 
-tax_rate_line = collections.namedtuple('tax_rate_line', ['start_p', 'ratio','deduction'])
+tax_rate_line = namedtuple('tax_rate_line', ['start_p', 'ratio','deduction'])
 
-tax_rate_table = [
-                    tax_rate_line(80000, 0.45, 15160),
-                    tax_rate_line(55000, 0.35, 7160),
-                    tax_rate_line(35000, 0.3, 4410),
-                    tax_rate_line(25000, 0.25, 2660),
-                    tax_rate_line(12000, 0.2, 1410),
-                    tax_rate_line(3000, 0.1, 210),
-                    tax_rate_line(0, 0.03, 0)
-                    ]
-tax_threshold = 5000
+tax_rate_table = [tax_rate_line(80000, 0.45, 15160),
+                  tax_rate_line(55000, 0.35, 7160),
+                  tax_rate_line(35000, 0.3, 4410),
+                  tax_rate_line(25000, 0.25, 2660),
+                  tax_rate_line(12000, 0.2, 1410),
+                  tax_rate_line(3000, 0.1, 210),
+                  tax_rate_line(0, 0.03, 0)
+]
 
-class Args():
+tax_threshold = 5000    # 起征点
+
+class Args:
     def __init__(self):
-        self.args = sys.argv[1:]
+        self.config_path = sys.argv[sys.argv.index('-c')+1]
+        self.user_path = sys.argv[sys.argv.index('-d')+1]
+        self.out_path = sys.argv[sys.argv.index('-o')+1]
 
-    def read_path(self, num):
-            index = self.args.index(num)
-            return self.args[index + 1]
 
-    @property
-    def config_path(self):
-        return self.read_path('-c')
-    
-    @property
-    def user_path(self):
-        return self.read_path('-d')
-    
-    @property
-    def out_path(self):
-        return self.read_path('-o')
-
-class Userdata():
+class Userdata:
     def __init__(self):
-        self.userdata_d = self.read_users_data()
-    def read_users_data(self):
-        dict1 = {}
-        try:
-            with open(args.user_path, 'r') as file:
-                for l in csv.reader(file):
-                    dict1[l[0]] = l[1]
-            return dict1
-        except:
-            print('wrong path')
-            sys.exit()
+        with open(args.user_path) as file:
+            self.userdata = list(csv.reader(file))
 
-class Config():
+
+class Config:
     def __init__(self):
-        self.config_d = self.read_config() 
-    def read_config(self):
-        dict2 = {}
-        try:
-            with open(args.config_path, 'r') as file:
-                for l in file.readlines():
-                    l1 = (l.strip('\n')).split(' = ')
-                    dict2[l1[0]] = l1[1]
-            return dict2
-        except:
-            print('wrong path')
-            sys.exit()
+        self.config = self._read_config()
+
+    def _read_config(self):
+        dict2 = {'shebao': 0}
+        with open(args.config_path, 'r') as file:
+            for l in file:
+                name, value = l.split(' = ')
+                if float(value) < 1:
+                    dict2['shebao'] += float(value)
+                else:
+                    dict2[name] = float(value)
+        return dict2
+
 
 def social_payment(inco, soc_f):                        
     for key,value in soc_f.items():
@@ -73,12 +53,12 @@ def social_payment(inco, soc_f):
 
     soc_ratio = soc_f['YangLao']+ soc_f['YiLiao']+ soc_f['ShiYe']+ soc_f['GongShang']+ soc_f['ShengYu']+ soc_f['GongJiJin']
 
+    soc_payment = soc_f['JiShuH'] * soc_ratio
     if inco < soc_f['JiShuL']:
         soc_payment = soc_f['JiShuL'] * soc_ratio
-    elif inco < soc_f['JiShuH']:
+    if inco < soc_f['JiShuH']:
         soc_payment = inco * soc_ratio
-    else:
-        soc_payment = soc_f['JiShuH'] * soc_ratio
+        
     return soc_payment
 
 def tax_compute(salary_f, social_f):
@@ -89,14 +69,16 @@ def tax_compute(salary_f, social_f):
         except:
             print('Parameter Error')
             continue
-        soc_payment = social_payment(income, social_f)
-        tax_payable = income - soc_payment - tax_threshold 
+        soc_payment = social_payment(income, social_f)   #社保
+        tax_payable = income - soc_payment - tax_threshold #应交税部分
+        print('需要交税部分工资：', tax_payable)
         for tax_rat_l in tax_rate_table:
             if tax_payable > tax_rat_l.start_p:
-                tax = tax_payable * tax_rat_l.ratio - tax_rat_l.deduction
+                print(tax_payable, tax_rat_l.ratio, tax_rat_l.deduction)
+                tax = tax_payable * tax_rat_l.ratio - tax_rat_l.deduction  #税
             else:
                 tax = 0
-        after_tax_salary = income -soc_payment - tax
+        after_tax_salary = income -soc_payment - tax     #税后部分
         soc_payment_l = '{:.2f}'.format(soc_payment)
         tax_l = '{:.2f}'.format(tax)
         after_tax_salary_l = '{:.2f}'.format(after_tax_salary)
